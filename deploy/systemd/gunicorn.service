@@ -1,0 +1,12 @@
+[Unit]
+Description=Gunicorn daemon for Django ToDoList
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/apps
+ExecStart=/home/ubuntu/apps/venv/bin/gunicorn --workers 3 --bind unix:/home/ubuntu/apps/todolist.sock todolist_project.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

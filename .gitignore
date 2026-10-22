@@ -1,0 +1,39 @@
+# ==============================================================================
+# SEGURIDAD CRÍTICA Y SECRETS MANAGEMENT
+# ==============================================================================
+*.pem
+*.key
+*.pub
+*.pfx
+*.ppk
+credentials
+secrets.json
+.env
+
+# Archivos comprimidos pesados
+*.zip
+*.tar.gz
+*.rar
+/Recera_paso_a_paso*.pdf
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv/
+
+# Python Cache y temporales
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Bases de datos locales SQLite
+*.sqlite3
+*.db
+
+# Archivos del sistema y del IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

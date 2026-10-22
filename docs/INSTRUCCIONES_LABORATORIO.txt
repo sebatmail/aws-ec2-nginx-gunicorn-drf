@@ -1,0 +1,245 @@
+================================================================================
+GUIA COMPLETA: COMO MOSTRAR O INSTALAR EL PROYECTO EN EL LABORATORIO
+Asignatura: Backend / AWS - Unidad 3
+Proyecto: API Django ToDoList con Gunicorn y Nginx en AWS EC2
+================================================================================
+
+--------------------------------------------------------------------------------
+DATOS Y CREDENCIALES DE ACCESO AL SERVIDOR
+--------------------------------------------------------------------------------
+* IP Elastica del Servidor:  44.193.33.51
+* URL API Django (DRF):      http://44.193.33.51/api/tasks/
+* URL Panel Admin Django:    http://44.193.33.51/admin/
+
+CREDENCIALES DE ADMINISTRADOR PARA ENTRAR A /admin/:
++-----------------------------+--------------+------------------+
+| Rol                         | Usuario      | Contrasena       |
++-----------------------------+--------------+------------------+
+| Superusuario Administrador  | admin        | admin123         |
+| Cuenta Profesor             | profe        | 123456           |
++-----------------------------+--------------+------------------+
+
+
+--------------------------------------------------------------------------------
+OPCION 1: COMO MOSTRAR EL PROYECTO YA FUNCIONANDO (SIN INSTALAR NADA)
+--------------------------------------------------------------------------------
+Dado que tu servidor ya esta desplegado y corriendo 24/7 en la nube de AWS,
+NO necesitas tu computador personal para mostrarlo en clases. 
+
+Desde cualquier PC del laboratorio con internet:
+
+PASO A: MOSTRAR LA API (Django REST Framework)
+1. Abre Google Chrome o Edge.
+2. Ingresa a la URL publica de tu API:
+   http://44.193.33.51/api/tasks/
+
+   ¿Que vera el profesor?
+   - La interfaz grafica completa de Django REST Framework (con CSS y diseno servido por Nginx).
+   - La lista de tareas (tasks) en formato JSON.
+   - En la parte inferior, una caja de formulario HTML donde puedes ingresar:
+     * Title: "Demostracion en clases"
+     * Done: [marcar o desmarcar casilla]
+   - Haz clic en el boton "POST": la tarea se guardara inmediatamente en la base
+     de datos del servidor y aparecera en pantalla en tiempo real.
+
+PASO B: MOSTRAR EL PANEL DE ADMINISTRACION DE DJANGO
+1. Ingresa a:
+   http://44.193.33.51/admin/
+2. Inicia sesion con cualquiera de estas dos credenciales:
+   - Usuario: admin    | Clave: admin123
+   - Usuario: profe    | Clave: 123456
+3. Dentro podras ver y gestionar usuarios, grupos y la base de datos de Django.
+
+
+--------------------------------------------------------------------------------
+OPCION 2: COMO CONECTARTE AL SERVIDOR POR SSH DESDE UN PC DE LA SALA
+--------------------------------------------------------------------------------
+Si el profesor te pide abrir la terminal del servidor en vivo:
+
+1. Lleva tu archivo de llave "AWS BACKEND.pem" en un Pendrive, Google Drive o correo.
+2. Descarga o copia "AWS BACKEND.pem" en una carpeta del PC del laboratorio (por ejemplo en Descargas).
+3. Abre "PowerShell" o "CMD" y navega hasta donde guardaste la llave:
+   cd Descargas
+
+4. Aplica permisos a la llave (necesario en Windows):
+   icacls "AWS BACKEND.pem" /inheritance:r
+   icacls "AWS BACKEND.pem" /grant:r "%username%:R"
+
+5. Conectate por SSH a tu servidor:
+   ssh -i "AWS BACKEND.pem" ubuntu@44.193.33.51
+
+6. Comandos utiles para mostrarle al profesor dentro del servidor:
+   * Ver que Nginx esta activo:
+     sudo systemctl status nginx
+   * Ver que Gunicorn esta activo:
+     sudo systemctl status gunicorn
+   * Si necesitaras crear otro usuario administrador:
+     cd /home/ubuntu/apps
+     source venv/bin/activate
+     python manage.py createsuperuser
+
+
+--------------------------------------------------------------------------------
+OPCION 3: INSTALACION COMPLETA PASO A PASO DESDE CERO
+(Por si el profesor exige crear una nueva instancia y rehacer todo en clases)
+--------------------------------------------------------------------------------
+
+PASO 1: EN LA CONSOLA DE AWS
+- Lanzar Instancia EC2:
+  * Nombre: django-todolist
+  * AMI: Ubuntu Server 22.04 LTS (o 24.04 LTS)
+  * Tipo: t2.micro o t3.micro (Free Tier)
+  * Key Pair: Tu clave .pem
+  * Security Group (Reglas de entrada / Inbound):
+    - SSH (Puerto 22) -> Cualquier IP o Tu IP
+    - HTTP (Puerto 80) -> 0.0.0.0/0
+    - (Opcional) All ICMP - IPv4 -> 0.0.0.0/0 (Para responder al ping)
+- Asignar y asociar IP Elastica a la instancia.
+
+PASO 2: CONECTARTE POR TERMINAL
+ssh -i "AWS BACKEND.pem" ubuntu@<TU_IP_ELASTICA>
+
+PASO 3: ACTUALIZAR E INSTALAR PAQUETES BASE
+sudo apt update && sudo apt upgrade -y
+sudo apt install python3-pip python3-venv nginx git -y
+
+PASO 4: CREAR ENTORNO Y PROYECTO DJANGO
+mkdir -p ~/apps && cd ~/apps
+python3 -m venv venv
+source venv/bin/activate
+pip install django djangorestframework gunicorn
+
+django-admin startproject todolist_project .
+python manage.py startapp tasks
+
+PASO 5: MODELO, SERIALIZADOR Y VISTAS
+Editar tasks/models.py:
+--------------------------------------------------
+from django.db import models
+
+class Task(models.Model):
+    title = models.CharField(max_length=200)
+    done = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+--------------------------------------------------
+
+Editar tasks/serializers.py:
+--------------------------------------------------
+from rest_framework import serializers
+from .models import Task
+
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = '__all__'
+--------------------------------------------------
+
+Editar tasks/views.py:
+--------------------------------------------------
+from rest_framework import viewsets
+from .models import Task
+from .serializers import TaskSerializer
+
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+--------------------------------------------------
+
+Editar todolist_project/urls.py:
+--------------------------------------------------
+from django.contrib import admin
+from django.urls import path, include
+from rest_framework import routers
+from tasks.views import TaskViewSet
+
+router = routers.DefaultRouter()
+router.register(r'tasks', TaskViewSet)
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
+]
+--------------------------------------------------
+
+Editar todolist_project/settings.py:
+- Modificar: ALLOWED_HOSTS = ['*']
+- En INSTALLED_APPS agregar:
+    'rest_framework',
+    'tasks',
+- Al final del archivo agregar:
+    STATIC_URL = '/static/'
+    STATIC_ROOT = '/home/ubuntu/apps/static/'
+
+PASO 6: MIGRACIONES Y ARCHIVOS ESTATICOS
+python manage.py makemigrations tasks
+python manage.py migrate
+python manage.py collectstatic --noinput
+
+PASO 7: CREAR SUPERUSUARIOS PARA /admin/
+python manage.py createsuperuser
+
+PASO 8: PERMISOS DE GRUPOS Y CARPETAS
+sudo usermod -aG www-data ubuntu
+sudo usermod -aG ubuntu www-data
+sudo chmod 750 /home/ubuntu
+sudo chmod 770 /home/ubuntu/apps
+sudo chown -R ubuntu:www-data /home/ubuntu/apps/static
+sudo chmod -R 755 /home/ubuntu/apps/static
+
+PASO 9: CREAR SERVICIO GUNICORN
+sudo nano /etc/systemd/system/gunicorn.service
+Pegar:
+--------------------------------------------------
+[Unit]
+Description=Gunicorn daemon for Django ToDoList
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/apps
+ExecStart=/home/ubuntu/apps/venv/bin/gunicorn --workers 3 --bind unix:/home/ubuntu/apps/todolist.sock todolist_project.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+--------------------------------------------------
+
+Iniciar Gunicorn:
+sudo systemctl daemon-reload
+sudo systemctl start gunicorn
+sudo systemctl enable gunicorn
+
+PASO 10: CONFIGURAR NGINX COMO PROXY INVERSO
+sudo nano /etc/nginx/sites-available/todolist
+Pegar:
+--------------------------------------------------
+server {
+    listen 80;
+    server_name _;
+
+    location /static/ {
+        alias /home/ubuntu/apps/static/;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/home/ubuntu/apps/todolist.sock;
+    }
+
+    error_log /var/log/nginx/todolist_error.log;
+    access_log /var/log/nginx/todolist_access.log;
+}
+--------------------------------------------------
+
+Activar sitio y reiniciar Nginx:
+sudo ln -sf /etc/nginx/sites-available/todolist /etc/nginx/sites-enabled/todolist
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
+
+PASO 11: PROBAR EN EL NAVEGADOR
+Abrir: http://<TU_IP_PUBLICA>/api/tasks/
+Abrir: http://<TU_IP_PUBLICA>/admin/
+================================================================================
