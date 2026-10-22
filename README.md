@@ -235,7 +235,7 @@ sudo systemctl status gunicorn
 
 ## 👨‍💻 Autor y Evaluación
 
-* **Estudiante:** Sebastián Gómez | *Informática y Ciberseguridad*
+* **Estudiante:** Sebastián Torres | *Informática y Ciberseguridad*
 * **Institución:** Instituto Profesional INACAP
 * **Profesor Evaluador:** Marcelo Alvarado
 * **Asignatura:** Desarrollo Backend & Bases de Datos

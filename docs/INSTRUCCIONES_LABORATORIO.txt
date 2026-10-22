@@ -1,5 +1,7 @@
 ================================================================================
 GUIA COMPLETA: COMO MOSTRAR O INSTALAR EL PROYECTO EN EL LABORATORIO
+Estudiante: Sebastián Torres | Carrera: Informática y Ciberseguridad
+Profesor: Marcelo Alvarado
 Asignatura: Backend / AWS - Unidad 3
 Proyecto: API Django ToDoList con Gunicorn y Nginx en AWS EC2
 ================================================================================

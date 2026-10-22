@@ -3,7 +3,7 @@
 -- CARRERA: Informática y Ciberseguridad
 -- ASIGNATURA: Backend / Bases de Datos
 -- PROFESOR: Marcelo Alvarado
--- ALUMNO: Entrega de Trabajo Final
+-- ALUMNO: Sebastián Torres
 -- TEMA: Resolución Ejercicio de Normalización de Base de Datos (Diapositiva 24)
 -- ============================================================================
 
